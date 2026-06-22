@@ -24,6 +24,10 @@ class Media extends Model
 
     public function getUrlAttribute(): string
     {
+        // Si chemin est déjà une URL Cloudinary, on la retourne directement
+        if (str_starts_with($this->chemin, 'http')) {
+            return $this->chemin;
+        }
         return Storage::disk('public')->url($this->chemin);
     }
 
