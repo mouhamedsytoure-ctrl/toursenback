@@ -25,6 +25,7 @@ class VitrineController extends Controller
         $immeuble->load([
             'medias',
             'logements' => fn ($q) => $q->where('statut', 'disponible')->with('medias'),
+            'creator:id,telephone',
         ]);
 
         return response()->json($immeuble);
