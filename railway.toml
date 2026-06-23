@@ -2,7 +2,7 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "php -c php.ini artisan migrate --force && php -c php.ini artisan config:cache && php -c php.ini artisan route:cache && php -c php.ini artisan view:cache && php -c php.ini artisan serve --host=0.0.0.0 --port=$PORT"
+startCommand = "bash start.sh"
 healthcheckPath = "/up"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
