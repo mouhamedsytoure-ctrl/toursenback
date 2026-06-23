@@ -7,6 +7,7 @@ use App\Models\Contrat;
 use App\Models\Immeuble;
 use App\Models\Logement;
 use App\Models\Media;
+use Cloudinary\Cloudinary;
 use Illuminate\Http\Request;
 
 class MediaController extends Controller
@@ -25,6 +26,11 @@ class MediaController extends Controller
             Contrat::class  => 'contrats',
             default         => 'immeubles',
         };
+    }
+
+    private function cloudinary(): Cloudinary
+    {
+        return new Cloudinary(config('services.cloudinary.url'));
     }
 
     public function store(Request $request)
@@ -53,7 +59,7 @@ class MediaController extends Controller
         $type         = str_starts_with((string) $file->getMimeType(), 'video') ? 'video' : 'photo';
         $resourceType = $type === 'video' ? 'video' : 'image';
 
-        $result = cloudinary()->uploadApi()->upload(
+        $result = $this->cloudinary()->uploadApi()->upload(
             $file->getRealPath(),
             ['folder' => 'toursenimmo', 'resource_type' => $resourceType]
         );
@@ -93,7 +99,7 @@ class MediaController extends Controller
 
         if ($media->public_id) {
             $resourceType = $media->type === 'video' ? 'video' : 'image';
-            cloudinary()->uploadApi()->destroy($media->public_id, ['resource_type' => $resourceType]);
+            $this->cloudinary()->uploadApi()->destroy($media->public_id, ['resource_type' => $resourceType]);
         }
 
         $media->delete();
