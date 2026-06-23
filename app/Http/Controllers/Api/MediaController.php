@@ -8,7 +8,6 @@ use App\Models\Immeuble;
 use App\Models\Logement;
 use App\Models\Media;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class MediaController extends Controller
 {
@@ -50,14 +49,20 @@ class MediaController extends Controller
             'Action non autorisee.'
         );
 
-        $file = $request->file('fichier');
-        $type = str_starts_with((string) $file->getMimeType(), 'video') ? 'video' : 'photo';
-        $path = $file->store('medias', 'public');
+        $file         = $request->file('fichier');
+        $type         = str_starts_with((string) $file->getMimeType(), 'video') ? 'video' : 'photo';
+        $resourceType = $type === 'video' ? 'video' : 'image';
+
+        $result = cloudinary()->uploadApi()->upload(
+            $file->getRealPath(),
+            ['folder' => 'toursenimmo', 'resource_type' => $resourceType]
+        );
 
         $media = $parent->medias()->create([
             'type'       => $type,
             'libelle'    => $request->input('libelle'),
-            'chemin'     => $path,
+            'chemin'     => $result['secure_url'],
+            'public_id'  => $result['public_id'],
             'couverture' => $request->boolean('couverture'),
         ]);
 
@@ -86,7 +91,11 @@ class MediaController extends Controller
             403
         );
 
-        Storage::disk('public')->delete($media->chemin);
+        if ($media->public_id) {
+            $resourceType = $media->type === 'video' ? 'video' : 'image';
+            cloudinary()->uploadApi()->destroy($media->public_id, ['resource_type' => $resourceType]);
+        }
+
         $media->delete();
 
         return response()->json(['message' => 'Media supprime.']);
