@@ -21,10 +21,17 @@ class AdminController extends Controller
         );
     }
 
+    private const MODULES = [
+        'immeubles', 'logements', 'contrats', 'locataires',
+        'paiements', 'reclamations', 'terrains', 'medias',
+        'transferts', 'baremes', 'envois',
+    ];
+
     /**
      * POST /api/admins
      * Le super admin cree un admin et coche ses droits.
      * permissions = [ {module, can_view, can_create, can_update, can_delete}, ... ]
+     * Si permissions est absent ou vide, tous les droits sont accordes par defaut.
      */
     public function store(Request $request)
     {
@@ -43,7 +50,20 @@ class AdminController extends Controller
             'permissions.*.can_delete'=> ['boolean'],
         ]);
 
-        $admin = DB::transaction(function () use ($data) {
+        $permissions = $data['permissions'] ?? [];
+
+        // Aucune permission envoyee -> tous les droits sur tous les modules
+        if (empty($permissions)) {
+            $permissions = array_map(fn($m) => [
+                'module'     => $m,
+                'can_view'   => true,
+                'can_create' => true,
+                'can_update' => true,
+                'can_delete' => true,
+            ], self::MODULES);
+        }
+
+        $admin = DB::transaction(function () use ($data, $permissions) {
             $admin = User::create([
                 'name'      => $data['name'],
                 'email'     => $data['email'],
@@ -53,14 +73,14 @@ class AdminController extends Controller
                 'is_active' => true,
             ]);
 
-            foreach (($data['permissions'] ?? []) as $p) {
+            foreach ($permissions as $p) {
                 AdminPermission::create([
                     'user_id'    => $admin->id,
                     'module'     => $p['module'],
                     'can_view'   => $p['can_view']   ?? true,
-                    'can_create' => $p['can_create'] ?? false,
-                    'can_update' => $p['can_update'] ?? false,
-                    'can_delete' => $p['can_delete'] ?? false,
+                    'can_create' => $p['can_create'] ?? true,
+                    'can_update' => $p['can_update'] ?? true,
+                    'can_delete' => $p['can_delete'] ?? true,
                 ]);
             }
 
