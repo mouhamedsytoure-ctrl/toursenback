@@ -64,10 +64,16 @@ class MediaController extends Controller
             ['folder' => 'toursenimmo', 'resource_type' => $resourceType]
         );
 
+        $secureUrl = $result['secure_url'];
+        if ($type === 'video') {
+            // Injecte la transformation ac_none pour supprimer l'audio
+            $secureUrl = str_replace('/upload/', '/upload/ac_none/', $secureUrl);
+        }
+
         $media = $parent->medias()->create([
             'type'       => $type,
             'libelle'    => $request->input('libelle'),
-            'chemin'     => $result['secure_url'],
+            'chemin'     => $secureUrl,
             'public_id'  => $result['public_id'],
             'couverture' => $request->boolean('couverture'),
         ]);
